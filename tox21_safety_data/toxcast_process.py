@@ -1,11 +1,14 @@
 from typing import Tuple
+from datetime import datetime
+
 import pandas as pd
 import numpy as np
 
 # Datasets paths
 assays_path = "INVITRODB_V3_3_SUMMARY/assay_methods_invitrodb_v3_3.xlsx"
 targets_path = "INVITRODB_V3_3_SUMMARY/gene_target_information_invitrodb_v3_3.xlsx"
-quality_stats_path = "INVITRODB_V3_3_SUMMARY/Assay_Quality_Summary_Stats_200819.csv" 
+quality_stats_path = "INVITRODB_V3_3_SUMMARY/Assay_Quality_Summary_Stats_200819.csv"
+conc_curves_path = "INVITRODB_V3_3_SUMMARY/EXPORT_LVL5&6_ASID7_TOX21_200730.csv"
 
 # Columns of interest
 assays_cols = [
@@ -16,6 +19,8 @@ assays_cols = [
     "cell_format", "cell_short_name", "assay_format_type"]
 targets_cols = ["official_symbol", "aenm"]
 quality_stats_cols = ["aenm", "acnt"]
+conc_curves_cols = ["aenm", "hitc", "flags"]
+
 
 def load_data(
     assays_path: str,
@@ -23,7 +28,9 @@ def load_data(
     targets_path: str,
     targets_cols: list,
     quality_stats_path: str,
-    quality_stats_cols: list
+    quality_stats_cols: list,
+    conc_curves_path: str,
+    conc_curves_cols: list
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     assays = pd.read_excel(assays_path,
                             sheet_name="assay_merge",
@@ -34,12 +41,15 @@ def load_data(
                             engine = 'openpyxl')[targets_cols]
 
     quality_stats = pd.read_csv(quality_stats_path)[quality_stats_cols]
-    return assays, targets, quality_stats
+
+    conc_curves = pd.read_csv(conc_curves_path, usecols=conc_curves_cols)
+    return assays, targets, quality_stats, conc_curves
 
 def enrich_assays(
     assays: pd.DataFrame,
     targets: pd.DataFrame,
-    quality_stats: pd.DataFrame
+    quality_stats: pd.DataFrame,
+    conc_curves: pd.DataFrame
 ) -> pd.DataFrame:
     assays_enriched = (assays
         # Merge assays with targets and quality_stats table
@@ -54,9 +64,19 @@ def enrich_assays(
             right_on="aenm",
             how="inner"
         )
+        #.merge(
+            #conc_curves,
+            #left_on="assay_component_endpoint_name",
+            #right_on="aenm",
+            #how="inner"
+        #)
+        # Drop unnecessary columns
+        .drop(
+            ["aeid", "aenm_x", "aenm_y"], axis=1
+        )
         # Drop duplicates
         .drop_duplicates(
-            subset=["acid", "biological_process_target", "official_symbol"]
+            subset=["assay_component_name", "biological_process_target", "official_symbol"]
         )
     )
     return assays_enriched
@@ -73,6 +93,10 @@ def filter_assays(
         .query('assay_function_type != "background control" or assay_design_type != ["background reporter", "viability reporter"] or intended_target_family != "background measurement"')
         # Filter out assays without active samples
         .query('acnt != 0')
+        # Filter out inactive assays
+        #.query('hitc != 0')
+        # Filter out potential false positives assays (flagged)
+        #.query('flags ')
     )
     return assays
 
@@ -88,14 +112,17 @@ def adjust_tissue(
 
 
 if __name__ == '__main__':
-    assays, targets, quality_stats = load_data(
+    assays, targets, quality_stats, conc_curves = load_data(
         assays_path, assays_cols,
         targets_path, targets_cols,
-        quality_stats_path, quality_stats_cols
+        quality_stats_path, quality_stats_cols,
+        conc_curves_path, conc_curves_cols
     )
-    assays_enriched = enrich_assays(assays, targets, quality_stats)
+    print(assays.iloc[0])
+    print(conc_curves.iloc[0])
+    assays_enriched = enrich_assays(assays, targets, quality_stats, conc_curves)
     adjust_tissue(assays_enriched)
     out = filter_assays(assays_enriched)
-    #print(out.shape)
-    #print(out["official_symbol"].nunique())
-    out.to_csv("ToxCast_filtered.tsv", sep="\t", header=True, index=False)    
+    print(out["assay_component_name"].nunique())
+    print(out["official_symbol"].nunique())
+    out.to_csv(f"ToxCast_{datetime.today().strftime('%Y-%m-%d')}.tsv", sep="\t", header=True, index=False)    
