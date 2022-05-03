@@ -1,2 +1,5 @@
 'query','output','timestamp'
 'high cholesterol','{''id'': ''EFO_0005801'', ''text'': ''cholesterol embolism'', ''score'': 0.8376234769821167}','2022-05-03 09:26:26.468312'
+'high cholesterol','{''id'': ''HP_0003124'', ''text'': ''Hypercholesterolemia;Elevated serum cholesterol;Increased total cholesterol;Elevated total cholesterol'', ''score'': 0.8460256457328796}','2022-05-03 14:38:07.565457'
+'breast carcinoma','{''id'': ''EFO_1000047'', ''text'': ''anaplastic breast carcinoma;pleomorphic breast carcinoma'', ''score'': 0.9045441150665283}','2022-05-03 14:38:19.129797'
+'Ochoa syndrome','{''id'': ''MONDO_0012802'', ''text'': ''oculoauricular syndrome'', ''score'': 0.7071818113327026}','2022-05-03 14:38:39.859684'
