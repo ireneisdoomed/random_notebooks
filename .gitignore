@@ -1,3 +1,6 @@
 Dailymed/data/indication/*
 AOPWiki/data/dump/aop-wiki-xml-2022-01-01
 exome_data/az/data/full_set/*
+chembl/Dailymed/data/indication/*
+exome_data/gene_burden_analysis/data/**/**/*
+phenodgim/**/**/*
